@@ -1,0 +1,147 @@
+### Playground requests: open in VS Code with the "REST Client" extension, click "Send Request".
+### Start the server first:  npm start
+@host = http://localhost:3000
+
+### Index of ALL endpoints
+GET {{host}}/?format=json
+
+### ===== 02 Concurrency =====
+### Run /blocking, then IMMEDIATELY run /ping in another tab: ping hangs until blocking finishes
+GET {{host}}/concurrency/blocking?ms=3000
+###
+GET {{host}}/concurrency/ping
+###
+GET {{host}}/concurrency/non-blocking?ms=3000
+###
+GET {{host}}/concurrency/cpu-main?n=42
+###
+GET {{host}}/concurrency/cpu-worker?n=42
+###
+GET {{host}}/concurrency/child-process
+###
+GET {{host}}/concurrency/threadpool?jobs=8
+###
+GET {{host}}/concurrency/event-loop-lag
+
+### ===== 04 Errors & health =====
+GET {{host}}/errors/operational
+###
+GET {{host}}/errors/validation?qty=abc
+###
+GET {{host}}/errors/async-throw
+###
+GET {{host}}/errors/bug
+###
+GET {{host}}/errors/slow-upstream?timeout=500
+###
+GET {{host}}/errors/overload
+###
+GET {{host}}/health/live
+###
+GET {{host}}/health/ready
+
+### ===== 05 Files & streams =====
+### Upload a file (pick any file path): streams to disk
+POST {{host}}/files/upload
+Content-Type: application/octet-stream
+
+< ./package.json
+###
+GET {{host}}/files
+###
+GET {{host}}/files/generate?mb=100
+###
+GET {{host}}/files/memory-demo?mode=buffer&mb=100
+###
+GET {{host}}/files/memory-demo?mode=stream&mb=100
+
+### ===== 06 Performance =====
+GET {{host}}/perf/n-plus-one
+###
+GET {{host}}/perf/batched
+###
+GET {{host}}/perf/sequential
+###
+GET {{host}}/perf/parallel
+
+### ===== 07 Database & caching =====
+GET {{host}}/cache/product/1
+###
+PUT {{host}}/cache/product/1
+Content-Type: application/json
+
+{ "price": 99 }
+###
+GET {{host}}/cache/stats
+###
+GET {{host}}/db/pool-demo?requests=10
+###
+GET {{host}}/db/pool-stats
+
+### ===== 08 Security =====
+POST {{host}}/auth/register
+Content-Type: application/json
+
+{ "email": "admin@acme.com", "password": "password123", "role": "admin", "org": "acme" }
+###
+# @name login
+POST {{host}}/auth/login
+Content-Type: application/json
+
+{ "email": "admin@acme.com", "password": "password123" }
+###
+@token = {{login.response.body.accessToken}}
+@refresh = {{login.response.body.refreshToken}}
+GET {{host}}/auth/me
+Authorization: Bearer {{token}}
+###
+GET {{host}}/auth/admin-only
+Authorization: Bearer {{token}}
+###
+GET {{host}}/auth/invoices/1
+Authorization: Bearer {{token}}
+###
+### invoice 3 belongs to org "globex" -> 404
+GET {{host}}/auth/invoices/3
+Authorization: Bearer {{token}}
+###
+POST {{host}}/auth/refresh
+Content-Type: application/json
+
+{ "refreshToken": "{{refresh}}" }
+###
+### Hit this 7 times quickly to see 429
+GET {{host}}/rate-limit/token-bucket
+###
+POST {{host}}/auth/login-limited
+Content-Type: application/json
+
+{ "email": "admin@acme.com", "password": "wrong" }
+
+### ===== 09 Background jobs =====
+# @name job
+POST {{host}}/jobs/email
+Content-Type: application/json
+
+{ "to": "user@example.com", "failTimes": 2, "idempotencyKey": "order-1" }
+###
+GET {{host}}/jobs/{{job.response.body.jobId}}
+###
+GET {{host}}/jobs
+
+### ===== 10/11 Reliability, metrics, leaks =====
+GET {{host}}/reliability/retry?failRate=0.6
+###
+GET {{host}}/reliability/breaker?fail=true
+###
+GET {{host}}/reliability/breaker-state
+###
+GET {{host}}/metrics
+###
+GET {{host}}/leak/leaky
+###
+GET {{host}}/leak/bounded
+###
+GET {{host}}/leak/stats
+###
+DELETE {{host}}/leak/reset
